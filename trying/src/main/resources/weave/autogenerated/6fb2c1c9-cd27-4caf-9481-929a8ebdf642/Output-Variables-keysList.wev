@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_6fb2c1c9_cd27_4caf_9481_929a8ebdf642_Output_Variables_keysList = Array<String>
+

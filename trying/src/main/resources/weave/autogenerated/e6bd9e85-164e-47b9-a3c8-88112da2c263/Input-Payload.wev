@@ -1,0 +1,7 @@
+%dw 2.0
+
+type auto_e6bd9e85_164e_47b9_a3c8_88112da2c263_Input_Payload = {|
+  key: String, 
+  value: Number
+|}
+

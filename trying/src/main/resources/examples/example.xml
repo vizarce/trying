@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <date>2022-02-07T22:21:15.827+02:00</date>
+  <data>
+    <name>Shiba Inu</name>
+    <symbol>SHIB</symbol>
+    <supply>589735030408322.8</supply>
+    <coin_market_price>0.0000</coin_market_price>
+    <coin_cap_price>0.0000327134221111</coin_cap_price>
+    <coin_market_volume>5104859759.2521515</coin_market_volume>
+    <coin_cap_volume>3938267657.7141727233030099</coin_cap_volume>
+  </data>
+  <data>
+    <name>Binance USD</name>
+    <symbol>BUSD</symbol>
+    <supply>16811371368.229256</supply>
+    <coin_market_price>1.0005</coin_market_price>
+    <coin_cap_price>1.0012142506736812</coin_cap_price>
+    <coin_market_volume>4886564074.014513</coin_market_volume>
+    <coin_cap_volume>1014578206.9609374195744720</coin_cap_volume>
+  </data>
+  <data>
+    <name>Tether</name>
+    <symbol>USDT</symbol>
+    <supply>80074893057.66304</supply>
+    <coin_market_price>1.0006</coin_market_price>
+    <coin_cap_price>1.0020860126637466</coin_cap_price>
+    <coin_market_volume>63313297512.73293</coin_market_volume>
+    <coin_cap_volume>42733575749.4100296359989368</coin_cap_volume>
+  </data>
+  <data>
+    <name>Avalanche</name>
+    <symbol>AVAX</symbol>
+    <supply>395891289.9134107</supply>
+    <coin_market_price>84.7220</coin_market_price>
+    <coin_cap_price>84.8431900301197091</coin_cap_price>
+    <coin_market_volume>901691408.5925506</coin_market_volume>
+    <coin_cap_volume>718408215.3320493476726075</coin_cap_volume>
+  </data>
+  <data>
+    <name>Ethereum</name>
+    <symbol>ETH</symbol>
+    <supply>119486206.749</supply>
+    <coin_market_price>3177.8777</coin_market_price>
+    <coin_cap_price>3182.1537588023961222</coin_cap_price>
+    <coin_market_volume>15165991284.21956</coin_market_volume>
+    <coin_cap_volume>10121155082.6508547004873420</coin_cap_volume>
+  </data>
+  <data>
+    <name>Bitcoin</name>
+    <symbol>BTC</symbol>
+    <supply>18951437</supply>
+    <coin_market_price>44307.7760</coin_market_price>
+    <coin_cap_price>44340.0464571767475188</coin_cap_price>
+    <coin_market_volume>28190557398.626125</coin_market_volume>
+    <coin_cap_volume>15915676413.2680646109286701</coin_cap_volume>
+  </data>
+</root>

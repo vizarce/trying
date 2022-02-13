@@ -1,0 +1,24 @@
+{
+  "sampleData": {
+    "eeda0eb7-82e5-4dbb-a2ed-476e84bf9233": {
+      "payload": "sample_data/java_2.dwl"
+    },
+    "27f6f16b-5438-4380-8045-fa957cf10041": {
+      "payload": "sample_data/java_5.dwl"
+    },
+    "d007c6e1-4f30-4737-be98-5c806bc43030": {
+      "payload": "sample_data/java_4.dwl"
+    },
+    "9a8407c0-ca19-48d9-ba34-e3dade2c23c9": {},
+    "a1a6177b-baf8-4f08-b3b0-b4c475a0c250": {
+      "payload": "sample_data/java_1.dwl"
+    },
+    "3d3b0ee9-6616-41cc-93ed-80fbcb4e6b05": {
+      "vars-checkKey": "sample_data/defaultstringtype.dwl",
+      "payload": "sample_data/serializable.dwl"
+    },
+    "00ae049a-992c-48f8-931a-5b116d31eaa4": {
+      "payload": "sample_data/java.dwl"
+    }
+  }
+}

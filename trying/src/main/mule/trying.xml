@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="95a8df8e-f061-453a-bbbb-0317d1c709e2" >
+		<file:connection workingDir="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\input" />
+	</file:config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="ea4d0fbd-4c76-49cb-a2a0-afbd4c6fcc22" />
+	<file:config name="File_Config1" doc:name="File Config" doc:id="255caa91-3852-46f8-a684-9a4f82c13f9d" >
+		<file:connection workingDir="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\output" />
+	</file:config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="7ca17acb-456d-4a49-b1a9-8bb3d95ede62" >
+		<wsc:connection wsdlLocation="http://coin-storage-system-api.us-e2.cloudhub.io/CoinStorageService?wsdl" service="CoinStorageService" port="CoinStorageServiceSOAP" address="http://coin-storage-system-api.us-e2.cloudhub.io/CoinStorageService" >
+			<wsc:web-service-security actor="http://schemas.xmlsoap.org/soap/actor/next" />
+		</wsc:connection>
+	</wsc:config>
+	<flow name="createData" doc:id="2bbeb4b7-7407-4379-94e7-251f85138fba" initialState="stopped">
+		<file:listener doc:name="keys.csv" doc:id="5b123e88-9033-4c3f-9a0c-cf61856c27b0" config-ref="File_Config" directory="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\input" moveToDirectory="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\output" renameTo='#[attributes.fileName ++ ".backup"]'>
+			<scheduling-strategy >
+				<fixed-frequency frequency="10000" />
+			</scheduling-strategy>
+			<file:matcher />
+		</file:listener>
+		<ee:transform doc:name="CSV to JAVA" doc:id="4da6a2db-b93e-4635-8bfd-e5816a2714f7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="writingTOStore" doc:id="b640f247-43f8-48f9-b8e4-7366f138ab87" >
+			<batch:process-records >
+				<batch:step name="WriteKeys" doc:id="efaa86dc-5728-40aa-af66-8eeee2719950" >
+					<os:store doc:name="Save Keys" doc:id="dcd64f2a-0f66-43bb-903e-313bb4de1e11" key='#["key" ++ now() as String]' objectStore="Object_store"/>
+					<file:write doc:name="Write to File" doc:id="636ae578-8f9a-45b0-9f12-259301c16a47" config-ref="File_Config1" path="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\output\keysOutput.csv" mode="APPEND">
+						<file:content ><![CDATA[#[output application/csv header=false --- payload]]]></file:content>
+					</file:write>
+					<logger level="INFO" doc:name="Logger" doc:id="5d83f7a8-a04d-44b9-8b8f-d123acd08d4a" />
+				</batch:step>
+				<batch:step name="ReadKeys" doc:id="20554e5d-1d62-4e98-886a-be7624b567fc" >
+					<os:retrieve-all-keys doc:name="Retrieve all keys" doc:id="06964d57-2fb3-48d6-9eaa-d4e21245ad36" objectStore="Object_store" target="keysList"/>
+					<ee:transform doc:name="JAVA to JSON" doc:id="7a731eba-1489-41bb-8cf3-3cd08571907f" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[payload]]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="2e116c02-f3c2-4519-ac6d-40c8da5d1c5c" message="#[payload]"/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="b9d3ef8f-f36c-411f-b9a2-e5d037281c26" />
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="tryingFlow" doc:id="f52efa8c-8040-4b03-8f1c-1ee1f9473b42" initialState="stopped">
+		<scheduler doc:name="Scheduler" doc:id="0281082b-3e81-4b41-b88f-5b2cee45cb7a" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="15000"/>
+			</scheduling-strategy>
+		</scheduler>
+		<set-payload value='#[{&#10;	"date": "2022-02-07T22:21:15.827+02:00",&#10;    "data": [&#10;        {&#10;            "name": "Shiba Inu",&#10;            "symbol": "SHIB",&#10;            "supply": 589735030408322.8,&#10;            "coin_market_price": "0.0000",&#10;            "coin_cap_price": "0.0000327134221111",&#10;            "coin_market_volume": "5104859759.2521515",&#10;            "coin_cap_volume": "3938267657.7141727233030099"&#10;        },&#10;        {&#10;            "name": "Binance USD",&#10;            "symbol": "BUSD",&#10;            "supply": 16811371368.229256,&#10;            "coin_market_price": "1.0005",&#10;            "coin_cap_price": "1.0012142506736812",&#10;            "coin_market_volume": "4886564074.014513",&#10;            "coin_cap_volume": "1014578206.9609374195744720"&#10;        },&#10;        {&#10;            "name": "Tether",&#10;            "symbol": "USDT",&#10;            "supply": 80074893057.66304,&#10;            "coin_market_price": "1.0006",&#10;            "coin_cap_price": "1.0020860126637466",&#10;            "coin_market_volume": "63313297512.73293",&#10;            "coin_cap_volume": "42733575749.4100296359989368"&#10;        },&#10;        {&#10;            "name": "Avalanche",&#10;            "symbol": "AVAX",&#10;            "supply": 395891289.9134107,&#10;            "coin_market_price": "84.7220",&#10;            "coin_cap_price": "84.8431900301197091",&#10;            "coin_market_volume": "901691408.5925506",&#10;            "coin_cap_volume": "718408215.3320493476726075"&#10;        },&#10;        {&#10;            "name": "Ethereum",&#10;            "symbol": "ETH",&#10;            "supply": 119486206.749,&#10;            "coin_market_price": "3177.8777",&#10;            "coin_cap_price": "3182.1537588023961222",&#10;            "coin_market_volume": "15165991284.21956",&#10;            "coin_cap_volume": "10121155082.6508547004873420"&#10;        },&#10;        {&#10;            "name": "Bitcoin",&#10;            "symbol": "BTC",&#10;            "supply": 18951437,&#10;            "coin_market_price": "44307.7760",&#10;            "coin_cap_price": "44340.0464571767475188",&#10;            "coin_market_volume": "28190557398.626125",&#10;            "coin_cap_volume": "15915676413.2680646109286701"&#10;        }&#10;    ]&#10;}]' doc:name="Set Payload" doc:id="7c0e2833-6e36-46f8-b718-3ec235116054" />
+		<ee:transform doc:name="Transform Message" doc:id="082070ca-281c-47c2-9a82-45ae88cf33c7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="another" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"date": "2022-02-07T22:21:15.827+02:00",
+    "data": [
+        {
+            "name": "Shiba Inu",
+            "symbol": "SHIB",
+            "supply": 589735030408322.8,
+            "coin_market_price": "0.0000",
+            "coin_cap_price": "0.0000327134221111",
+            "coin_market_volume": "5104859759.2521515",
+            "coin_cap_volume": "3938267657.7141727233030099"
+        },
+        {
+            "name": "Binance USD",
+            "symbol": "BUSD",
+            "supply": 16811371368.229256,
+            "coin_market_price": "1.0005",
+            "coin_cap_price": "1.0012142506736812",
+            "coin_market_volume": "4886564074.014513",
+            "coin_cap_volume": "1014578206.9609374195744720"
+        },
+        {
+            "name": "Tether",
+            "symbol": "USDT",
+            "supply": 80074893057.66304,
+            "coin_market_price": "1.0006",
+            "coin_cap_price": "1.0020860126637466",
+            "coin_market_volume": "63313297512.73293",
+            "coin_cap_volume": "42733575749.4100296359989368"
+        },
+        {
+            "name": "Avalanche",
+            "symbol": "AVAX",
+            "supply": 395891289.9134107,
+            "coin_market_price": "84.7220",
+            "coin_cap_price": "84.8431900301197091",
+            "coin_market_volume": "901691408.5925506",
+            "coin_cap_volume": "718408215.3320493476726075"
+        },
+        {
+            "name": "Ethereum",
+            "symbol": "ETH",
+            "supply": 119486206.749,
+            "coin_market_price": "3177.8777",
+            "coin_cap_price": "3182.1537588023961222",
+            "coin_market_volume": "15165991284.21956",
+            "coin_cap_volume": "10121155082.6508547004873420"
+        },
+        {
+            "name": "Bitcoin",
+            "symbol": "BTC",
+            "supply": 18951437,
+            "coin_market_price": "44307.7760",
+            "coin_cap_price": "44340.0464571767475188",
+            "coin_market_volume": "28190557398.626125",
+            "coin_cap_volume": "15915676413.2680646109286701"
+        }
+    ]
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="5c470e93-7f04-4b75-97fb-d1662c57aced" />
+		<ee:transform doc:name="Transform Message" doc:id="8950d21a-4f10-401a-b1b2-996f2fe9bca3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var data = payload
+var data1 = vars.another
+var array = data.data.*'coin_market_price'
+var list = (payload.data map ((item, index) -> {
+    name: item.name,
+    symbol: item.symbol,
+    coin_market_price: (item.'coin_market_price' replace "\$" with "") as String as Number,
+    coin_cap_price: (item.'coin_cap_price' replace "\$" with "") as String as Number,
+    coin_market_volume24h: item.coin_market_volume as Number,
+    coin_cap_volume24h: item.coin_market_volume as Number
+}))
+
+var timedif = now() - payload.date as DateTime
+var td = timedif.days as String ++ " days, " ++ timedif.hours as String ++ " hours, " ++ timedif.minutes as String ++ " min " ++ timedif.secs as String ++ " sec"
+
+---
+{
+	"hashCodeOfPayload01": java!com::currency::CryptoCurrency::getHashCode(data),
+	"hashCodeOfPayload02": java!com::currency::CryptoCurrency::getHashCode(data1),
+	(if ("hashCodeOfPayload01" != "hashCodeOfPayload02")
+		 {"maxPrice": max(array),
+		 "minPrice": min(array)}
+
+	 else 
+		"message": "All is good!"),
+	"theMostExpenciveCoin(MEC)": (list orderBy $.coin_market_price)[-1].name,
+    "MEC_coin_market_price": ((list orderBy $.coin_market_price)[-1].'coin_market_price') as String ++ "\$",
+    "theMostExpenciveCoin(MEC)1": (list orderBy $.coin_cap_price)[-1].name,
+    "MEC_coin_cap_price": ((list orderBy $.coin_cap_price)[-1].'coin_cap_price') as String ++ "\$",
+    "priceDifference": (abs((list orderBy $.coin_market_price)[-1].'coin_market_price' - (list orderBy $.coin_cap_price)[-1].'coin_cap_price')) as String ++ "\$",
+    "avgVolume24h": avg(list.coin_market_volume24h),
+    "documTimeDifference": td
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c1084c87-9e9b-484b-b278-4f7836eb02bb" message="#[payload]"/>
+	</flow>
+	<flow name="mockOS" doc:id="acf4019f-5ee9-4787-9f4e-a73891dbe153">
+		<scheduler doc:name="Scheduler" doc:id="f6736cf6-c9d2-405b-96bc-b04504aa58eb" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="30" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<set-variable value='#[randomInt(100) as String]' doc:name="Key" doc:id="153482b5-a3d6-4638-a6bf-d875f43bce2f" variableName="key"/>
+		<set-variable value="#[randomInt(10000000000)]" doc:name="Value" doc:id="ba64bbfc-b2e7-4ca1-a789-29579eb99d58" variableName="value"/>
+		<ee:transform doc:name="Set Payload" doc:id="7a4d5d2a-c604-4bee-9a71-91c526be2613" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"key": "key" ++ vars.key as String,
+	"value": vars.value
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<os:store doc:name="Store" doc:id="dd8b7428-ebc9-48bb-a0ac-11c1695d0529" key="#[payload.key]" objectStore="Object_store">
+						<os:value><![CDATA[#[payload.value]]]></os:value>
+					</os:store>
+		<logger level="INFO" doc:name="Logger" doc:id="eb4fc262-9aa6-4d96-a7aa-a7fd682e5ae0" message="#[payload]" />
+		<flow-ref doc:name="Flow Reference" doc:id="f25426a2-c05e-470a-b5c0-c9ebd612b9bc" name="retreiveKeys"/>
+	</flow>
+	<sub-flow name="retreiveKeys" doc:id="e6bd9e85-164e-47b9-a3c8-88112da2c263" >
+		<os:retrieve-all-keys doc:name="Retrieve all keys" doc:id="d5c14e7f-7c5c-41e1-ae3b-3d78cc2dfe0e" objectStore="Object_store" target="keysList" />
+		<set-payload value="#[vars.keysList]" doc:name="keysList" doc:id="9a8407c0-ca19-48d9-ba34-e3dade2c23c9" />
+		<logger level="INFO" doc:name="Logger" doc:id="87a0ee8f-d7bb-4a42-abe6-9ba4a0cedef5" message="#[payload]" />
+		<flow-ref doc:name="Flow Reference" doc:id="a1fdd736-90f5-4603-aabe-cfd4e4b08800" name="getValues"/>
+	</sub-flow>
+	<flow name="getValues" doc:id="6fb2c1c9-cd27-4caf-9481-929a8ebdf642">
+		<batch:job jobName="tryingBatch_Job" doc:id="390ca25b-7f16-4b77-bb79-0121bda79383" >
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="e0d5a913-64cb-4b69-9cfd-ee1038ad9b9b" >
+					<set-variable value="#[payload]" doc:name="checkKey" doc:id="0aafdf4d-ec69-495d-b990-da946df2a1e2" variableName="checkKey"/>
+					<os:retrieve doc:name="Retrieve" doc:id="a93db255-b60a-4d8f-91a5-82210a66667e" key="#[vars.checkKey]" objectStore="Object_store">
+						<os:default-value ><![CDATA[0]]></os:default-value>
+					</os:retrieve>
+					<logger level="INFO" doc:name="Logger" doc:id="ecc6fe2e-ea7e-496c-9662-8bff4e717740" message="#[payload]"/>
+					<ee:transform doc:name="Transform Message" doc:id="3d3b0ee9-6616-41cc-93ed-80fbcb4e6b05">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"hashCode": payload,
+	"key": vars.checkKey
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="6ee6cb6d-aa8f-491b-a42a-bf398e601228" message="#[payload]"/>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="2cdc3c4b-a593-41ad-86ca-0f88a3f36732" streaming="true">
+						<ee:transform doc:name="Transform Message" doc:id="7c94f47f-2eea-4329-a3f9-dfd58730a601">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"hashCode": payload,
+	"key": vars.checkKey
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<logger level="INFO" doc:name="Logger" doc:id="22f52c5e-bb75-45c9-8695-349af1e9376c" message="#[payload]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+		</batch:job>
+	</flow>
+	<flow name="getDocuments" doc:id="559938ff-9592-40ad-a534-e101a1d44f2a" initialState="stopped">
+		<scheduler doc:name="Scheduler" doc:id="bf6bd9d1-56e4-4318-a2af-82ac0189b4c3" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="10000"/>
+			</scheduling-strategy>
+		</scheduler>
+		<wsc:consume operation="readCoin" doc:name="Consume" doc:id="4d4fe141-4d10-44a6-bf6a-6be8f375265e" config-ref="Web_Service_Consumer_Config">
+			<wsc:message>
+				<wsc:body ><![CDATA[#[null]]]></wsc:body>
+				<wsc:headers ><![CDATA[#[%dw 2.0
+output application/xml
+  ---
+  "headers": {
+    documentID: "qwer1234"
+  }]]]></wsc:headers>
+			</wsc:message>
+		</wsc:consume>
+		<ee:transform doc:name="Transform Message" doc:id="eeda0eb7-82e5-4dbb-a2ed-476e84bf9233" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+ns ns0 http://training.mulesoft.com/
+output application/xml
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="45d76c41-621c-49b1-86c5-8094fa0e485b" message="#[payload]" />
+	</flow>
+	<flow name="clearOS" doc:id="6b76a84a-fd3d-4287-aaed-c29af3fdf370" initialState="stopped">
+		<scheduler doc:name="Scheduler" doc:id="0077e319-4b80-45d9-9107-1185f9c1bdec" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="5000"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="e3a86014-c081-4059-b387-a6f893688b4d" message="Hello world!!!!!!!"/>
+		<os:retrieve-all doc:name="Retrieve all" doc:id="4ab8ff91-08b1-4306-a92c-dbe2209bc121" objectStore="Object_store" />
+		<logger level="INFO" doc:name="Logger" doc:id="95c9bf20-312d-4c43-acda-3a13950549ff" message="#[payload]" />
+		<file:write doc:name="Write" doc:id="33182a4a-5a4a-478d-b765-77c8f7963be2" config-ref="File_Config" path="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\output\final.txt" />
+		<os:clear doc:name="Clear" doc:id="8cdf6be4-4265-4aab-80a0-2d7b99c79ff6" objectStore="Object_store" />
+		<logger level="INFO" doc:name="Logger" doc:id="3cd94449-0290-4ff6-b456-6d3a566bdd22" message="#[payload]" />
+	</flow>
+	<flow name="trying" doc:id="340a2e27-a819-43c0-aa12-e8ee332e472a" initialState="stopped">
+		<file:listener doc:name="newkeys.csv" doc:id="35aacf05-92bc-4256-87e5-5bc8c4de8d25" config-ref="File_Config" directory="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\input" moveToDirectory="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\output">
+			<scheduling-strategy >
+				<fixed-frequency frequency="10000"/>
+			</scheduling-strategy>
+			<file:matcher filenamePattern="*.csv"/>
+		</file:listener>
+		<ee:transform doc:name="CSV to JAVA" doc:id="17075404-dfcc-450f-8d69-639a701b7947" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[sizeOf(payload)]" doc:name="size" doc:id="76dc0317-e197-402b-a1b2-b01ec1e57eb8" variableName="size"/>
+		<foreach doc:name="For Each" doc:id="61616781-eecf-4c3c-b025-0911fe3fa200" >
+			<os:store doc:name="Store" doc:id="1431f727-d57c-4ea5-822e-97c3b7e9f0aa" key='#["newKey" ++ vars.counter as String]' objectStore="Object_store" />
+			<ee:transform doc:name="Transform Message" doc:id="cd43f555-7b52-425d-b2ab-9e7e954354b6">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/csv header=false
+---
+[payload]]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<file:write doc:name="Write" doc:id="731615e8-a8b2-4e37-b12a-2443a3cbe4fb" config-ref="File_Config" path="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\output\newkeysWrite.csv" mode="APPEND">
+			</file:write>
+			<logger level="INFO" doc:name="Logger" doc:id="95d0617f-bb5c-4584-8b8e-b2c81036f416" message="#[payload]"/>
+		</foreach>
+		<os:retrieve-all-keys doc:name="Retrieve all keys" doc:id="b7643a17-f538-4180-ab2b-54c682415307" objectStore="Object_store"/>
+		<ee:transform doc:name="Transform Message" doc:id="8b954745-8468-4754-865e-c8cc11b34e29" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="d0b0174d-5e8b-4025-8545-0d930a7d2360" counterVariableName="counter1">
+			<os:retrieve doc:name="Retrieve" doc:id="55909815-9fd2-4c6b-a299-1b57847ff2f5" key="#[payload]" objectStore="Object_store">
+				<os:default-value ><![CDATA[0]]></os:default-value>
+			</os:retrieve>
+			<logger level="INFO" doc:name="Logger" doc:id="06809898-dcaa-4799-b30e-40fc67f2d5a6" />
+			<ee:transform doc:name="Transform Message" doc:id="c1525d2a-01d6-457b-b265-5b35ad4fe0ab" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[payload] ]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<file:write doc:name="Write" doc:id="324c8348-cc9e-4f53-a108-38f47ccd390d" config-ref="File_Config" path="C:\SI\SI\APDevFundamentals4.4_studentFiles_SP_05oct2021\APDevFundamentals4.4_studentFiles_SP_05oct2021\resources\output\final.txt" mode="APPEND">
+			</file:write>
+			<logger level="INFO" doc:name="Logger" doc:id="7bb52a6f-88b5-4890-9537-324fb7218577" />
+		</foreach>
+		<logger level="INFO" doc:name="Logger" doc:id="f9852b22-054d-4cb6-9f97-e54ba5d889dc" message="#[payload]"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="51bb3be6-9ddd-4723-bb0a-f2a940b3bbca" type="EXPRESSION">
+				<ee:transform doc:name="Transform Message" doc:id="9adaef85-501e-47b7-9a1d-cfc3ecf9befc" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"message": error.errorMessage, 
+	"description": error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>
